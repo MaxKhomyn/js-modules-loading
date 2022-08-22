@@ -6,39 +6,41 @@ export const useFacade = (): [
 ] => {
     const [state, setState] = useState(Object.assign({}, defaultState) as AppState);
 
-    const sortByDependencies = useCallback((modules: Module[]): Module[] => {
-        const pushModule = (modules: Module[], module: Module) => {
-            if (!modules.includes(module)) {
-                modules.push(module);
-            }
+    const insertModules = (array: Module[], toPush: Module) => {
+        if (!array.includes(toPush)) {
+            array.push(toPush);
         }
+    }
 
-        const result = modules.reduce((previous, module) => {
-            module.dependenciesNames?.forEach(name => {
-                const m = modules.find(m => m.name === name);
+    const sortByDependencies = useCallback((modules: Module[]): Module[] => {
+        return modules.reduce((previous, module) => {
+            const dependencies = module.dependenciesNames?.reduce((dependencies, name) => {
+                const dependency = modules.find(m => m.name === name);
 
-                if (m) {
-                    pushModule(previous, m);
+                if (dependency) {
+                    dependencies.push(dependency);
                 }
-            });
 
-            pushModule(previous, module);
+                return dependencies;
+            }, new Array<Module>()) ?? [];
+
+            sortModules(dependencies);
+
+            [...dependencies, module].forEach(m => insertModules(previous, m));
 
             return previous;
         }, new Array<Module>());
-
-        return result;
     }, []);
 
-    const sortByPriority = (modules: Module[]): Module[] => {
-        return modules.sort((a, b) => b.priority - a.priority);
-    }
+    const sortByPriority = (modules: Module[]): Module[] => modules.sort((a, b) => b.priority - a.priority);
+
+    const sortModules = useCallback((modules: Module[]) => sortByDependencies(sortByPriority(modules)), [sortByDependencies]);
 
     const setModules = useCallback((modules: Module[]) => {
-        const sorted = sortByDependencies(sortByPriority(modules));
+        const sorted = sortModules(modules);
 
         setState(state => ({...state, modules: sorted}));
-    }, [sortByDependencies]);
+    }, [sortModules]);
 
     useEffect(() => {
         setModules(modules);
