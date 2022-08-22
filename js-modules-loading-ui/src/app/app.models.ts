@@ -45,7 +45,7 @@ export const modules: Module[] = [
     },
     {
         name: 'module-5.js',
-        dependenciesNames: ['module-4.js'],
+        dependenciesNames: [],
         priority: Priority.high,
         url: 'https://my-service.com/modules/module-5.js'
     },

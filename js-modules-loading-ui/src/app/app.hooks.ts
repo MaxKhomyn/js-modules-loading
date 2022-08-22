@@ -12,6 +12,8 @@ export const useFacade = (): [
         }
     }
 
+    const sortByPriority = useCallback((modules: Module[]): Module[] => modules.sort((a, b) => b.priority - a.priority), []);
+
     const sortByDependencies = useCallback((modules: Module[]): Module[] => {
         return modules.reduce((previous, module) => {
             const dependencies = module.dependenciesNames?.reduce((dependencies, name) => {
@@ -24,17 +26,14 @@ export const useFacade = (): [
                 return dependencies;
             }, new Array<Module>()) ?? [];
 
-            sortModules(dependencies);
 
-            [...dependencies, module].forEach(m => insertModules(previous, m));
+            [...sortByDependencies(dependencies), module].forEach(m => insertModules(previous, m));
 
             return previous;
         }, new Array<Module>());
     }, []);
 
-    const sortByPriority = (modules: Module[]): Module[] => modules.sort((a, b) => b.priority - a.priority);
-
-    const sortModules = useCallback((modules: Module[]) => sortByDependencies(sortByPriority(modules)), [sortByDependencies]);
+    const sortModules = useCallback((modules: Module[]) => sortByDependencies(sortByPriority(modules)), [sortByDependencies, sortByPriority]);
 
     const setModules = useCallback((modules: Module[]) => {
         const sorted = sortModules(modules);

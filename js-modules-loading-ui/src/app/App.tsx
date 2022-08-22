@@ -24,7 +24,7 @@ const App = () => {
                             {` Priority: ${Priority[module.priority]};`}
                         </span>}
 
-                        {module.dependenciesNames &&
+                        {module.dependenciesNames && module.dependenciesNames.length > 0 &&
                         <span>
                             {` Dependencies: ${module.dependenciesNames?.join(', ')};`}
                         </span>}
