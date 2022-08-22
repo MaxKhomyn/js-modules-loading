@@ -1,83 +1,51 @@
-import { useEffect, useState } from "react";
-
-enum Status {
-    pending,
-    loading,
-    loaded,
-    executed,
-    failed,
-}
-
-enum Priority {
-    low = 3,
-    medium = 2,
-    high = 1
-}
-
-interface Module {
-    url: string;
-    status: Status,
-    priority: Priority;
-    dependencies: Module[];
-}
-
-interface AppState {
-    isLoading: boolean;
-    modules: Module[];
-}
-
-const defaultState = {
-    isLoading: true,
-    modules: [],
-};
+import { useCallback, useEffect, useState } from "react";
+import { AppState, defaultState, Module, modules } from "./app.models";
 
 export const useFacade = (): [
     AppState,
 ] => {
-
     const [state, setState] = useState(Object.assign({}, defaultState) as AppState);
 
-    const setModules = (modules: Module[]) => {
-        setState(state => ({...state, modules: modules, isLoading: false}));
+    const sortByDependencies = useCallback((modules: Module[]): Module[] => {
+        const pushModule = (modules: Module[], module: Module) => {
+            if (!modules.includes(module)) {
+                modules.push(module);
+            }
+        }
 
-        loadModules(modules);
-    }
+        const result = modules.reduce((previous, module) => {
+            module.dependenciesNames?.forEach(name => {
+                const m = modules.find(m => m.name === name);
 
-    const setModuleStatus = (module: Module, status: Status) => {
-        const modules = state.modules.map(i => i.url === module.url ? {...i, status} : i);
-
-        setState(state => ({...state, modules: modules}));
-    }
-
-    const loadModules = (modules: Module[]) => {
-        modules.sort((a, b) => a.priority - b.priority);
-
-        Promise.all(modules.map(m => loadModule(m)));
-    }
-
-    const loadModule = (module: Module) => {
-        return new Promise((resolve, reject) => {
-            setModuleStatus(module, Status.loading);
-
-            get<string>(module.url).then((content: string) => {
-                setModuleStatus(module, Status.loaded);
-
+                if (m) {
+                    pushModule(previous, m);
+                }
             });
 
-            setModuleStatus(module, Status.executed);
-            setModuleStatus(module, Status.failed);
-        });
+            pushModule(previous, module);
+
+            return previous;
+        }, new Array<Module>());
+
+        return result;
+    }, []);
+
+    const sortByPriority = (modules: Module[]): Module[] => {
+        return modules.sort((a, b) => b.priority - a.priority);
     }
 
-    const get = <T>(resourceUrl: string): Promise<T> =>
-        fetch(resourceUrl).then(response => response.json())
+    const setModules = useCallback((modules: Module[]) => {
+        const sorted = sortByDependencies(sortByPriority(modules));
+
+        setState(state => ({...state, modules: sorted}));
+    }, [sortByDependencies]);
 
     useEffect(() => {
-        const url = "localhost:8000/modules";
-        setState(Object.assign({}, defaultState) as AppState);
+        setModules(modules);
 
-        get<Module[]>(url).then(setModules);
-    }, []);
+        // const url = "localhost:8000/modules";
+        // get<Module[]>(url).then(setModules); // fetch modules from server
+    }, [setModules]);
 
     return [
         state,

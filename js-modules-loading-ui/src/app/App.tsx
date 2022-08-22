@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import { useFacade } from './app.hooks';
+import { Priority } from './app.models';
 
 const App = () => {
     const [
@@ -8,18 +9,31 @@ const App = () => {
     ] = useFacade();
 
     const {
-        isLoading,
-        modules
+        modules,
     } = state;
-
-    if (isLoading) {
-        return <></>
-    }
 
     return (
         <div className="App">
+            <ul>
+            {
+                modules.map((module, index) =>
+                    <li key={index}>
+                        {`${module.name} - `}
 
-            
+                        {<span>
+                            {` Priority: ${Priority[module.priority]};`}
+                        </span>}
+
+                        {module.dependenciesNames &&
+                        <span>
+                            {` Dependencies: ${module.dependenciesNames?.join(', ')};`}
+                        </span>}
+
+                        <script src={module.url}/>
+                    </li>
+                )
+            }
+            </ul>
         </div>
     );
 }
